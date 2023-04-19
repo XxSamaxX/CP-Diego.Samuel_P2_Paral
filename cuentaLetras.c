@@ -3,6 +3,8 @@
 #include <math.h>
 #include <mpi/mpi.h>
 
+int numprocs;
+
 void inicializaCadena(char *cadena, int n){
     int i;
     for(i=0; i<n/2; i++){
@@ -19,6 +21,21 @@ void inicializaCadena(char *cadena, int n){
     }
 }
 
+void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm){
+    int elev = root + pow(2, root - 1);
+    MPI_Send(buffer, count, datatype, elev, 0, comm);
+    MPI_Recv(buffer, count, datatype, root, 0, comm, MPI_STATUS_IGNORE);
+    for(int i = 0;i + pow(2, i - 1) < numprocs;i++){
+        elev = i + pow(2, i - 1);
+        MPI_Send(buffer, count, datatype, elev, 0, comm);
+        MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
+    }
+}
+
+/*void MPI_Flattree(){
+    
+}*/
+
 int main(int argc, char *argv[]){
     // Inicializacion de MPI
     MPI_Init(&argc, &argv);
@@ -28,7 +45,7 @@ int main(int argc, char *argv[]){
     }
 
     // Declaracion de variables MPI
-    int numprocs, rank, namelen;
+    int rank, namelen;
     char processor_name[MPI_MAX_PROCESSOR_NAME];
 
     int i, n, count=0, buffcount=0;
@@ -48,7 +65,7 @@ int main(int argc, char *argv[]){
         n = atoi(argv[1]);
     }
 
-    MPI_Bcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_BinomialBcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);//MPI_Bcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
     MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     cadena = (char *) malloc(n*sizeof(char));
