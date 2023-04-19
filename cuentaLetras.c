@@ -22,13 +22,19 @@ void inicializaCadena(char *cadena, int n){
 }
 
 void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm){
-    int elev = root + pow(2, root - 1);
-    MPI_Send(buffer, count, datatype, elev, 0, comm);
-    MPI_Recv(buffer, count, datatype, root, 0, comm, MPI_STATUS_IGNORE);
-    for(int i = 0;i + pow(2, i - 1) < numprocs;i++){
-        elev = i + pow(2, i - 1);
-        MPI_Send(buffer, count, datatype, elev, 0, comm);
-        MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
+    int rank;
+    for(int j = 1;j < numprocs;j = j + pow(2, j - 1)){
+        for(int i = 0;i < numprocs / 2;i++){
+            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            if(rank == i){
+                MPI_Send(buffer, count, datatype, 1, 0, comm);
+            }
+            else{
+                if(rank == j){
+                    MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
+                }
+            }
+        }
     }
 }
 
