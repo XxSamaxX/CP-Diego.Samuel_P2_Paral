@@ -39,17 +39,15 @@ void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, int root,
 }
 
 void MPI_FlattreeColectiva(void *buffer, void * recvbuff , int count , MPI_Datatype datatype , MPI_Op op , int root , MPI_Comm comm){
-    int elem = 0;
     int rank;
     MPI_Comm_rank(comm, &rank);
     if(rank == root){
         for(int i = 0;i < numprocs;i++){
             if(i != root){
-                int buf;
-                MPI_Recv(&buf, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
-                printf("buffer: %d\n", buf);
-                *(int *)recvbuff = *(int *)recvbuff + buf;
+                MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
             }
+            printf("buffer: %d\n", *(int *)buffer);
+            *(int *)recvbuff = *(int *)recvbuff + *(int *)buffer;
         }
     }
     else{
