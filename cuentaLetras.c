@@ -26,9 +26,7 @@ void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, int root,
     for(int j = 1;j < numprocs;j = j + pow(2, j - 1)){
         for(int i = 0;i < numprocs / 2;i++){
             MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-            if(rank == i){
-                MPI_Send(buffer, count, datatype, 1, 0, comm);
-            }
+            MPI_Send(buffer, count, datatype, i, 0, comm);
             else{
                 if(rank == j){
                     MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
