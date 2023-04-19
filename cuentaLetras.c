@@ -21,7 +21,7 @@ void inicializaCadena(char *cadena, int n){
     }
 }
 
-void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, MPI_Comm comm){
+void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm){
     int rank, numprocs;
     MPI_Comm_size(comm, &numprocs);
     MPI_Comm_rank(comm, &rank);
@@ -38,9 +38,23 @@ void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, MPI_Comm 
     }
 }
 
-/*void MPI_Flattree(){
-    
-}*/
+void MPI_FlattreeColectiva(void *buffer, void * recvbuff , int count , MPI_Datatype datatype , MPI_Op op , int root , MPI_Comm comm){
+    int * elem = malloc(numprocs * sizeof(int));
+    for(int i = 0; i < numprocs; i++){
+        if(root == i){
+            for(int j = 0;j < numprocs - 1;j++){
+                MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
+                elem[j] = *(int *)buffer;
+            }
+            for(int j = 0;j < numprocs - 1;j++){
+                *(int *)recvbuff = *(int *)recvbuff + elem[j];
+            }
+        }
+        else{
+            MPI_Send(buffer, count, datatype, i, 0, comm);
+        }
+    }
+}
 
 int main(int argc, char *argv[]){
     // Inicializacion de MPI
@@ -71,8 +85,8 @@ int main(int argc, char *argv[]){
         n = atoi(argv[1]);
     }
 
-    MPI_BinomialBcast(&L, 1, MPI_CHAR, MPI_COMM_WORLD);//MPI_Bcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
-    MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_BinomialBcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);//MPI_Bcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_BinomialBcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);//MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     cadena = (char *) malloc(n*sizeof(char));
     inicializaCadena(cadena, n);
@@ -83,7 +97,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    MPI_Reduce(&count, &buffcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_FlattreeColectiva(&count, &buffcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);//MPI_Reduce(&count, &buffcount, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
     if (rank == 0) {
         printf("El numero de apariciones de la letra %c es %d\n", L, buffcount);
     }
