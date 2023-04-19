@@ -21,17 +21,19 @@ void inicializaCadena(char *cadena, int n){
     }
 }
 
-void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, int root, MPI_Comm comm){
-    int rank;
-    for(int j = 1;j < numprocs;j = j + pow(2, j - 1)){
-        for(int i = 0;i < numprocs / 2;i++){
-            MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-            MPI_Send(buffer, count, datatype, i, 0, comm);
-            else{
-                if(rank == j){
-                    MPI_Recv(buffer, count, datatype, i, 0, comm, MPI_STATUS_IGNORE);
-                }
-            }
+void MPI_BinomialBcast(void *buffer, int count, MPI_Datatype datatype, MPI_Comm comm){
+    int rank, numprocs;
+    MPI_Comm_size(comm, &numprocs);
+    MPI_Comm_rank(comm, &rank);
+    int k = ceil(log2(numprocs));
+
+    for(int i = 0; i < k; i++){
+        int partner = rank ^ (1 << i); // Calcula el partner para esta ronda
+        if(rank < partner && partner < numprocs){
+            MPI_Send(buffer, count, datatype, partner, 0, comm); // Envía a partner
+        }
+        else if(rank > partner){
+            MPI_Recv(buffer, count, datatype, partner, 0, comm, MPI_STATUS_IGNORE); // Recibe de partner
         }
     }
 }
@@ -69,7 +71,7 @@ int main(int argc, char *argv[]){
         n = atoi(argv[1]);
     }
 
-    MPI_BinomialBcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);//MPI_Bcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
+    MPI_BinomialBcast(&L, 1, MPI_CHAR, MPI_COMM_WORLD);//MPI_Bcast(&L, 1, MPI_CHAR, 0, MPI_COMM_WORLD);
     MPI_Bcast(&n, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     cadena = (char *) malloc(n*sizeof(char));
